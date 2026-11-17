@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build:api": "esbuild src/server/app.ts --bundle --platform=node --format=esm --packages=external --outfile=api/index.js",
+    "build": "vite build && npm run build:api",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -84,6 +85,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "esbuild": "^0.25.0",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.27.2",
     "@testing-library/jest-dom": "^6.6.0",

@@ -1,5 +1,6 @@
 import { MongoClient, Db } from "mongodb";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import dotenv from "dotenv";
 
 dotenv.config();

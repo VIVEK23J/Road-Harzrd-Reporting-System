@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { getDb, type UserDoc } from "./db";
 import type { WithId } from "mongodb";
 
@@ -13,6 +14,17 @@ export const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// Normalize URL paths for Vercel Serverless Function & reverse proxy environments
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  const matched = (req.headers["x-matched-path"] as string) || (req.headers["x-forwarded-uri"] as string);
+  if (matched && matched.startsWith("/api") && req.url !== matched) {
+    req.url = matched;
+  } else if (req.url && !req.url.startsWith("/api")) {
+    req.url = `/api${req.url}`;
+  }
+  next();
+});
 
 export interface AuthUser {
   id: string;
@@ -550,3 +562,5 @@ app.delete("/api/admin/hazards/:id", authenticate, requireAdmin, async (req: Aut
     res.status(500).json({ error: err.message });
   }
 });
+
+export default app;
