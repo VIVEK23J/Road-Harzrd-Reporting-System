@@ -8,6 +8,13 @@ import { HazardThumb } from "@/components/HazardRow";
 import { StatusBadge, SeverityMark } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { HAZARD_TYPES, STATUS_LABEL, typeMeta, shortId, timeAgo, type Hazard, type HazardStatus } from "@/lib/hazards";
 import { cn } from "@/lib/utils";
 
@@ -196,7 +203,7 @@ function AdminRow({
   busy: boolean;
 }) {
   const [note, setNote] = useState("");
-  const next: { s: HazardStatus; label: string; v: "signal" | "ink" | "outline" | "destructive" }[] =
+  const quickActions: { s: HazardStatus; label: string; v: "signal" | "ink" | "outline" | "destructive" }[] =
     h.status === "pending"
       ? [
           { s: "verified", label: "Verify", v: "signal" },
@@ -205,11 +212,18 @@ function AdminRow({
       : h.status === "verified"
       ? [
           { s: "in_progress", label: "Start repair", v: "signal" },
+          { s: "resolved", label: "Resolve", v: "outline" },
           { s: "rejected", label: "Reject", v: "outline" },
         ]
       : h.status === "in_progress"
-      ? [{ s: "resolved", label: "Mark resolved", v: "signal" }]
-      : [{ s: "pending", label: "Reopen", v: "outline" }];
+      ? [
+          { s: "resolved", label: "Mark resolved", v: "signal" },
+          { s: "verified", label: "Back to verified", v: "outline" },
+        ]
+      : [
+          { s: "in_progress", label: "In Progress", v: "outline" },
+          { s: "pending", label: "Reopen", v: "outline" },
+        ];
 
   return (
     <div
@@ -235,44 +249,79 @@ function AdminRow({
           {h.address && <span>{h.address}</span>}
         </div>
         {h.description && <p className="mt-2 text-sm">{h.description}</p>}
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-          <Input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Timeline note (optional)"
-            className="h-9 bg-background"
-            maxLength={300}
-          />
-          <div className="flex gap-2">
-            {next.map((n) => (
-              <Button
-                key={n.s}
-                size="sm"
-                variant={n.v}
-                className="h-9"
-                disabled={busy}
-                onClick={() => {
-                  onUpdate(n.s, note);
-                  setNote("");
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Action timeline note (optional)"
+              className="h-9 bg-background flex-1"
+              maxLength={300}
+            />
+            <div className="flex items-center gap-2">
+              <Select
+                value={h.status}
+                onValueChange={(val) => {
+                  const s = val as HazardStatus;
+                  if (s !== h.status) {
+                    onUpdate(s, note);
+                    setNote("");
+                  }
                 }}
               >
-                {n.label}
+                <SelectTrigger className="h-9 w-36 bg-background text-xs font-semibold">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="verified">Verified</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
+                Quick Actions:
+              </span>
+              {quickActions.map((n) => (
+                <Button
+                  key={n.s}
+                  size="sm"
+                  variant={n.v}
+                  className="h-8 text-xs font-semibold"
+                  disabled={busy}
+                  onClick={() => {
+                    onUpdate(n.s, note);
+                    setNote("");
+                  }}
+                >
+                  {n.label}
+                </Button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button asChild size="icon" variant="ghost" className="h-8 w-8" aria-label="Open">
+                <Link to="/hazards/$id" params={{ id: h.id }}>
+                  <ExternalLink className="size-4" />
+                </Link>
               </Button>
-            ))}
-            <Button asChild size="icon" variant="ghost" className="h-9 w-9" aria-label="Open">
-              <Link to="/hazards/$id" params={{ id: h.id }}>
-                <ExternalLink />
-              </Link>
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 text-destructive hover:bg-destructive/10"
-              aria-label="Delete"
-              onClick={onDelete}
-            >
-              <Trash2 />
-            </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                aria-label="Delete"
+                disabled={busy}
+                onClick={onDelete}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

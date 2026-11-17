@@ -1,15 +1,23 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, MapPin, ThumbsUp, Send, Navigation, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, ThumbsUp, Send, Navigation, Loader2, ShieldAlert, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { MapView } from "@/components/MapView";
 import { StatusBadge, SeverityMark } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { typeMeta, shortId, timeAgo, STATUS_LABEL } from "@/lib/hazards";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { typeMeta, shortId, timeAgo, STATUS_LABEL, type HazardStatus } from "@/lib/hazards";
 
 export const Route = createFileRoute("/hazards/$id")({
   head: () => ({
@@ -77,6 +85,44 @@ function HazardPage() {
     onSuccess: () => {
       setComment("");
       qc.invalidateQueries({ queryKey: ["comments", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const navigate = useNavigate();
+  const [adminStatus, setAdminStatus] = useState<HazardStatus>("pending");
+  const [adminNote, setAdminNote] = useState("");
+
+  useEffect(() => {
+    if (hz.data?.status) {
+      setAdminStatus(hz.data.status);
+    }
+  }, [hz.data?.status]);
+
+  const updateStatus = useMutation({
+    mutationFn: async () => {
+      return api.updateHazardStatus(id, adminStatus, adminNote.trim() || undefined);
+    },
+    onSuccess: (updated) => {
+      toast.success(`Hazard status changed to: ${STATUS_LABEL[updated.status]}`);
+      setAdminNote("");
+      qc.invalidateQueries({ queryKey: ["hazard", id] });
+      qc.invalidateQueries({ queryKey: ["events", id] });
+      qc.invalidateQueries({ queryKey: ["hazards"] });
+      qc.invalidateQueries({ queryKey: ["admin-hazards"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteReport = useMutation({
+    mutationFn: async () => {
+      return api.deleteHazard(id);
+    },
+    onSuccess: () => {
+      toast.success("Hazard report permanently removed from MongoDB");
+      qc.invalidateQueries({ queryKey: ["hazards"] });
+      qc.invalidateQueries({ queryKey: ["admin-hazards"] });
+      navigate({ to: "/admin" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -155,6 +201,94 @@ function HazardPage() {
               </a>
             </Button>
           </div>
+
+          {user?.role === "admin" && (
+            <div className="mt-8 rounded-lg border-2 border-primary bg-primary/5 p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary/20 pb-3">
+                <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+                  <ShieldAlert className="size-4" /> Admin Controls · Update Report Status
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono">
+                  <span className="text-muted-foreground">Current:</span>
+                  <StatusBadge status={h.status} />
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold uppercase text-muted-foreground block mb-1.5">
+                    Select New Status
+                  </label>
+                  <Select
+                    value={adminStatus}
+                    onValueChange={(val) => setAdminStatus(val as HazardStatus)}
+                  >
+                    <SelectTrigger className="w-full bg-background font-semibold">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending (Needs Review / Reopened)</SelectItem>
+                      <SelectItem value="verified">Verified (Confirmed by Authority)</SelectItem>
+                      <SelectItem value="in_progress">In Progress (Repair Scheduled / Underway)</SelectItem>
+                      <SelectItem value="resolved">Resolved (Hazard Repaired)</SelectItem>
+                      <SelectItem value="rejected">Rejected (Invalid / Duplicate)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase text-muted-foreground block mb-1.5">
+                    Timeline Action Note (Optional)
+                  </label>
+                  <Input
+                    value={adminNote}
+                    onChange={(e) => setAdminNote(e.target.value)}
+                    placeholder="e.g. Work order issued; road crew assigned"
+                    className="bg-background"
+                    maxLength={300}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 pt-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="signal"
+                    disabled={updateStatus.isPending || (adminStatus === h.status && !adminNote.trim())}
+                    onClick={() => updateStatus.mutate()}
+                    className="font-bold gap-2"
+                  >
+                    {updateStatus.isPending ? (
+                      <>
+                        <Loader2 className="animate-spin size-4" /> Updating…
+                      </>
+                    ) : (
+                      `Apply Status: ${STATUS_LABEL[adminStatus]}`
+                    )}
+                  </Button>
+                  {adminStatus !== h.status && (
+                    <span className="text-xs font-mono text-primary font-semibold hidden sm:inline">
+                      ({STATUS_LABEL[h.status]} → {STATUS_LABEL[adminStatus]})
+                    </span>
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:bg-destructive/10 border-destructive/30 gap-1.5"
+                  disabled={deleteReport.isPending}
+                  onClick={() => {
+                    if (confirm("Are you sure you want to permanently delete this hazard report from MongoDB?")) {
+                      deleteReport.mutate();
+                    }
+                  }}
+                >
+                  <Trash2 className="size-3.5" /> Delete Report
+                </Button>
+              </div>
+            </div>
+          )}
 
           <section className="mt-12">
             <h2 className="border-b-4 border-foreground pb-2 text-2xl font-bold">Community Discussion</h2>
