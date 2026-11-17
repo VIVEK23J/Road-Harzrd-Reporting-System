@@ -1,0 +1,23 @@
+{
+  "name": "RoadWatch — Road Hazard Reporter Tool",
+  "short_name": "RoadWatch",
+  "description": "Citizen tool for inspecting, reporting, and monitoring road hazards and repairs",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#18181b",
+  "theme_color": "#eab308",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+@import "leaflet/dist/leaflet.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-info: var(--info);
+  --color-asphalt: var(--asphalt);
+  --color-asphalt-foreground: var(--asphalt-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+}
+
+:root {
+  --radius: 0.25rem;
+  --background: oklch(0.972 0.012 85);
+  --foreground: oklch(0.19 0.012 260);
+  --card: oklch(0.985 0.008 85);
+  --card-foreground: oklch(0.19 0.012 260);
+  --popover: oklch(0.985 0.008 85);
+  --popover-foreground: oklch(0.19 0.012 260);
+  --primary: oklch(0.82 0.17 78);
+  --primary-foreground: oklch(0.19 0.012 260);
+  --secondary: oklch(0.925 0.015 85);
+  --secondary-foreground: oklch(0.19 0.012 260);
+  --muted: oklch(0.935 0.012 85);
+  --muted-foreground: oklch(0.47 0.015 260);
+  --accent: oklch(0.925 0.03 82);
+  --accent-foreground: oklch(0.19 0.012 260);
+  --destructive: oklch(0.58 0.21 28);
+  --destructive-foreground: oklch(0.98 0 0);
+  --success: oklch(0.58 0.14 155);
+  --info: oklch(0.55 0.13 245);
+  --asphalt: oklch(0.21 0.012 260);
+  --asphalt-foreground: oklch(0.95 0.01 85);
+  --border: oklch(0.84 0.015 85);
+  --input: oklch(0.84 0.015 85);
+  --ring: oklch(0.82 0.17 78);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.03em; }
+}
+
+@utility hazard-tape {
+  background-image: repeating-linear-gradient(-45deg, var(--primary) 0 14px, var(--foreground) 14px 28px);
+}
+@utility road-dash {
+  background-image: repeating-linear-gradient(90deg, var(--primary) 0 28px, transparent 28px 52px);
+}
+@utility grid-paper {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted-foreground);
+}
+
+.sev-low { --sev: var(--info); }
+.sev-medium { --sev: var(--primary); }
+.sev-high { --sev: oklch(0.68 0.19 50); }
+.sev-critical { --sev: var(--destructive); }
+
+.hz-pin {
+  width: 26px; height: 26px; border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--sev, var(--primary));
+  border: 3px solid var(--foreground);
+  box-shadow: 2px 2px 0 var(--foreground);
+}
+.hz-pin.is-resolved { background: var(--success); }
+.hz-pick {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary); border: 4px solid var(--foreground);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 40%, transparent);
+}
+.leaflet-container { font-family: var(--font-sans); background: var(--muted); }
