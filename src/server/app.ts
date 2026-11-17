@@ -17,9 +17,16 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Normalize URL paths for Vercel Serverless Function & reverse proxy environments
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  const matched = (req.headers["x-matched-path"] as string) || (req.headers["x-forwarded-uri"] as string);
-  if (matched && matched.startsWith("/api") && req.url !== matched) {
+  const matched =
+    (req.headers["x-matched-path"] as string) ||
+    (req.headers["x-forwarded-uri"] as string) ||
+    (req.headers["x-vercel-matched-path"] as string);
+
+  if (matched && matched.startsWith("/api")) {
     req.url = matched;
+  } else if (req.query && req.query.__path) {
+    const subpath = Array.isArray(req.query.__path) ? req.query.__path.join("/") : String(req.query.__path);
+    req.url = subpath.startsWith("/") ? `/api${subpath}` : `/api/${subpath}`;
   } else if (req.url && !req.url.startsWith("/api")) {
     req.url = `/api${req.url}`;
   }

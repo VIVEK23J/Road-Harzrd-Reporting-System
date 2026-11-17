@@ -82,9 +82,12 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use((req, _res, next) => {
-  const matched = req.headers["x-matched-path"] || req.headers["x-forwarded-uri"];
-  if (matched && matched.startsWith("/api") && req.url !== matched) {
+  const matched = req.headers["x-matched-path"] || req.headers["x-forwarded-uri"] || req.headers["x-vercel-matched-path"];
+  if (matched && matched.startsWith("/api")) {
     req.url = matched;
+  } else if (req.query && req.query.__path) {
+    const subpath = Array.isArray(req.query.__path) ? req.query.__path.join("/") : String(req.query.__path);
+    req.url = subpath.startsWith("/") ? `/api${subpath}` : `/api/${subpath}`;
   } else if (req.url && !req.url.startsWith("/api")) {
     req.url = `/api${req.url}`;
   }
